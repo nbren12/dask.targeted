@@ -3,6 +3,7 @@ import luigi
 from typing import Dict
 from dask.delayed import delayed, Delayed
 import inspect
+from toolz import map, valmap
 
 
 def targeted(func):
@@ -14,11 +15,19 @@ def targeted(func):
                for key, val in sig.parameters.items()
                if isinstance(val.default, luigi.Target)}
 
+
     @wraps(func)
     def f(*args, **kwargs):
         # construct list of targets to pass
-        func(*args, **targets, **kwargs)
-        return targets
+        ret = func(*args, **targets, **kwargs)
+
+        tgt = list(targets.values())
+        if len(tgt) == 0:
+            return ret
+        elif len(tgt) == 1:
+            return tgt[0]
+        else:
+            raise NotImplementedError("I have not decided what API to use for multiple arguments")
 
     return Targeted(delayed(f), targets=targets)
 
@@ -49,23 +58,37 @@ class Targeted(object):
                  depend_targets:Dict=None):
         self._delayed = my_delayed
 
-        if not depend_targets:
+        if depend_targets is None:
             self.depend_targets = {}
         else:
             self.depend_targets = depend_targets
 
-        self.targets = targets
+        if targets is None:
+            self.targets = {}
+        else:
+            self.targets = targets
 
     def __getattr__(self, item):
         return getattr(self._delayed, item)
 
     def __call__(self, *args, **kwargs):
+
+
         new_target_dict = self.depend_targets.copy()
         new_target_dict.update(self.targets)
-        for arg in list(args) + list(kwargs.values()):
-            if isinstance(arg, Targeted):
-                new_target_dict.update(arg.depend_targets)
 
-        return Targeted(self._delayed(*args, **kwargs), targets=None,
+
+        def process_targeted_arg(arg):
+            if isinstance(arg, Targeted):
+                new_target_dict.update(arg.targets)
+                new_target_dict.update(arg.depend_targets)
+                arg = arg._delayed
+
+            return arg
+
+        new_args = [process_targeted_arg(arg) for arg in args]
+        new_kwargs = {key: process_targeted_arg(val) for key, val in kwargs.items()}
+
+        return Targeted(self._delayed(*new_args, **new_kwargs), targets=None,
                         depend_targets=new_target_dict)
 
