@@ -1,0 +1,5 @@
+name: daskluigi
+dependencies:
+- python=3.6
+- dask
+- luigi
