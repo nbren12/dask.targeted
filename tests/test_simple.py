@@ -1,7 +1,11 @@
 import luigi
-from dask import delayed
-from daskluigi.simple import string_targeted, targeted, xarray_read, xarray_write, targeted, read_or_compute, TargetedCallback
 import mock
+import pytest
+from dask import delayed
+
+from daskluigi.simple import (TargetedCallback, read_or_compute,
+                              string_targeted, targeted, xarray_read,
+                              xarray_write)
 
 
 def test_string_targeted(tmpdir):
@@ -50,9 +54,7 @@ def test_xr_targeted(tmpdir):
     m.assert_called_once()
 
 
-def test_targeted_callback(tmpdir):
-    from dask import get
-
+def targeted_callback_generator():
     tgt = mock.Mock(name="target")
 
     fun = mock.Mock(name="function")
@@ -61,23 +63,28 @@ def test_targeted_callback(tmpdir):
     reader = mock.Mock(name="reader")
     writer = mock.Mock(name="writer")
 
-
     # dask
-    dask = {
-        'a': (read_or_compute, reader, writer, tgt, 'b'),
+    dsk = {'a': (read_or_compute, reader, writer, tgt, 'b'), 'b': (fun, )}
+    yield fun, tgt, dsk
+
+    dsk = {
+        'a': (lambda x: x, (read_or_compute, reader, writer, tgt, 'b')),
         'b': (fun, )
     }
 
+    yield fun, tgt, dsk
+
+
+@pytest.mark.parametrize("fun,tgt,dsk", targeted_callback_generator())
+def test_targeted_callback(fun, tgt, dsk):
+    from dask import get
 
     with TargetedCallback():
         tgt.exists.return_value = False
-        get(dask, 'a')
+        get(dsk, 'a')
         fun.assert_called_once()
-
 
         fun.reset_mock()
         tgt.exists.return_value = True
-        get(dask, 'a')
+        get(dsk, 'a')
         fun.assert_not_called()
-
-

@@ -17,11 +17,15 @@ from dask.callbacks import Callback
 from dask.delayed import delayed
 from toolz import curry
 
+from .targeted import unfuse_match
+
 
 class TargetedCallback(Callback):
     def _start(self, dsk):
-        new_dsk = {}
-        for key, val in dsk.items():
+
+        new_dsk = unfuse_match(dsk, lambda x: x == read_or_compute)
+
+        for key, val in new_dsk.items():
             if val[0] == read_or_compute:
                 reader, writer, tgt, x = val[1:]
                 if tgt.exists():
