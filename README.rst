@@ -19,35 +19,36 @@ has wide-array of targets that represent different types of persistent data
 stores (e.g. database, file system, etc), that we can leverage to make this work
 easier.
 
-This package provides the following syntax for building a graph between persistent objects::
+This package provides the following syntax for building a graph between persistent objects
+
+.. code:: python
+
+    from dask.delayed import delayed
+    from targeted.simple import TargetedCallback, targeted
+    import luigi
+
+    @delayed
+    def fun():
+        print("Calling fun")
+        return "hello world"
 
 
-  from dask.delayed import delayed
-  from targeted.simple import TargetedCallback, targeted
-  import luigi
-
-  @delayed
-  def fun():
-      print("Calling fun")
-      return "hello world"
+    def string_read(obj):
+        return obj.open("r").read()
 
 
-  def string_read(obj):
-      return obj.open("r").read()
-
-
-  def string_write(target, obj):
-      with target.open("w") as f:
-          f.write(obj)
+    def string_write(target, obj):
+        with target.open("w") as f:
+            f.write(obj)
 
 
 
-  tgt = luigi.LocalTarget("hello.txt")
+    tgt = luigi.LocalTarget("hello.txt")
 
-  with TargetedCallback():
+    with TargetedCallback():
 
-      a = fun()
-      b = targeted(tgt, reader=string_read, writer=string_write)(a)
+        a = fun()
+        b = targeted(tgt, reader=string_read, writer=string_write)(a)
 
-      print(b.compute()) # calls fun and saves to hello.txt
-      print(b.compute()) # loads text from hello.txt
+        print(b.compute()) # calls fun and saves to hello.txt
+        print(b.compute()) # loads text from hello.txt
