@@ -17,7 +17,7 @@ from dask.callbacks import Callback
 from dask.delayed import delayed
 from toolz import curry
 
-from .targeted import unfuse_match
+from .graph_manipulations import unfuse_match
 
 
 class TargetedCallback(Callback):
