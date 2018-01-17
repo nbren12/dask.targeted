@@ -7,10 +7,12 @@
 from toolz import curry
 from dask.delayed import delayed
 
+
 def target_or_compute(tgt, output):
     """Function which will be used to match for targets in graph
     """
     return tgt
+
 
 class Targeted(object):
     def __init__(self, fun, tgts):
@@ -25,8 +27,7 @@ class Targeted(object):
         new_args = tuple(self.tgts) + args
         output = delayed(self.fun)(*new_args, **kwargs)
 
-        out = [delayed(target_or_compute)(tgt,  output)
-               for tgt in self.tgts]
+        out = [delayed(target_or_compute)(tgt, output) for tgt in self.tgts]
 
         if len(out) == 1:
             out = out[0]
@@ -43,8 +44,6 @@ class Targeted(object):
         return "Targeted(%s)" % self.fun
 
 
-
-
 def prune_tree(dsk):
 
     # get dask tree with Targeted objects as top level keys
@@ -54,6 +53,7 @@ def prune_tree(dsk):
         if isinstance(val[0], Targeted):
             if val[0].exists():
                 dsk_flat[key] = val[0].tgts
+
 
 def target_compute_dict(tgt_graph):
     compute = {}
@@ -66,5 +66,3 @@ def target_compute_dict(tgt_graph):
 def targeted(tgts, fun):
     f = Targeted(fun, tgts)
     return delayed(f)
-
-
