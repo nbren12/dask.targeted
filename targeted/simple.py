@@ -11,11 +11,12 @@ Example::
     with TargetedCallback():
         b.compute()
 """
+from functools import partial
+
 import luigi
 import xarray as xr
 from dask.callbacks import Callback
 from dask.delayed import delayed
-from toolz import curry
 
 from .graph_manipulations import unfuse_match
 
@@ -68,7 +69,6 @@ def identity(x):
     return x
 
 
-@curry
 def targeted(target, obj, reader=identity, writer=identity):
     return delayed(read_or_compute)(reader, writer, target, obj)
 
@@ -95,4 +95,4 @@ def xr_local_targeted(path):
         luigi.LocalTarget(path), reader=xarray_read, writer=xarray_write)
 
 
-string_targeted = targeted(reader=string_read, writer=string_write)
+string_targeted = partial(targeted, reader=string_read, writer=string_write)

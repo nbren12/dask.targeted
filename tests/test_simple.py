@@ -21,7 +21,7 @@ def test_string_targeted(tmpdir):
     with TargetedCallback():
 
         a = fun()
-        b = string_targeted(tgt)(a)
+        b = string_targeted(tgt, a)
         assert b.compute() == "hello world"
         assert b.compute() == "hello world"
 
@@ -43,7 +43,7 @@ def test_xr_targeted(tmpdir):
     path = str(tmpdir.join("test.nc"))
 
     tgt = luigi.LocalTarget(path)
-    air_t = targeted(tgt, reader=xarray_read, writer=xarray_write)(a)
+    air_t = targeted(tgt, a, reader=xarray_read, writer=xarray_write)
 
     with TargetedCallback():
         air_t.compute()
