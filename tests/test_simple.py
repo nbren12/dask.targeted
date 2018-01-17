@@ -3,9 +3,9 @@ import mock
 import pytest
 from dask import delayed
 
-from daskluigi.simple import (TargetedCallback, read_or_compute,
-                              string_targeted, targeted, xarray_read,
-                              xarray_write)
+from targeted.simple import (TargetedCallback, read_or_compute,
+                             string_targeted, targeted, xarray_read,
+                             xarray_write)
 
 
 def test_string_targeted(tmpdir):

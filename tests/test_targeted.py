@@ -1,6 +1,6 @@
 from luigi import LocalTarget
-from daskluigi.targeted import (Targeted, filter_tree, target_compute_dict,
-                                unfuse_match)
+from targeted.targeted import (Targeted, filter_tree, target_compute_dict,
+                               unfuse_match)
 import mock
 import pytest
 
@@ -123,7 +123,5 @@ def test_unfuse_match():
 
     # get key tht is not 'a'
     key = [key for key in ans if key not in dsk1][0]
-    dsk1 = {'a': ('b-1', key, 1),
-            key: ('b-2', -1, 1)}
+    dsk1 = {'a': ('b-1', key, 1), key: ('b-2', -1, 1)}
     assert dsk1 == ans
-
