@@ -31,17 +31,25 @@ class TargetedCallback(Callback):
                 if tgt.exists():
                     new_dsk[key] = (reader, tgt)
                 else:
-                    new_dsk[key] = (write_and_return, writer, x)
+                    new_dsk[key] = (write_and_return, writer, tgt, x)
 
         dsk.update(new_dsk)
 
 
 def read_or_compute():
+    """This is a placeholder which is searched for by TargetedCallback.
+
+    if (read_or_compute, reader, writer, tgt, x) is found in the dask graph it will be replaced by either
+    (reader, tgt)
+    if tgt.exists() == True
+    Otherwise it will be replaced by 
+    (write_and_return, writer, 'b')
+    """
     pass
 
 
-def write_and_return(writer, x):
-    writer(x)
+def write_and_return(writer, target, x):
+    writer(target, x)
     return x
 
 
@@ -51,16 +59,7 @@ def identity(x):
 
 @curry
 def targeted(target, obj, reader=identity, writer=identity):
-    """Return targeted object
-    """
-    if target.exists():
-        return delayed(reader)(target)
-
-    def _write_and_return(obj):
-        writer(target, obj)
-        return obj
-
-    return delayed(_write_and_return)(obj)
+    return delayed(read_or_compute)(reader, writer, target, obj)
 
 
 def string_read(obj):

@@ -18,12 +18,13 @@ def test_string_targeted(tmpdir):
     path = str(tmpdir.join("a_file.txt"))
     tgt = luigi.LocalTarget(path)
 
-    a = fun()
-    b = string_targeted(tgt)(a)
-    assert b.compute() == "hello world"
+    with TargetedCallback():
 
-    # test that second call does not call the function again
-    b = string_targeted(tgt)(a)
+        a = fun()
+        b = string_targeted(tgt)(a)
+        assert b.compute() == "hello world"
+        assert b.compute() == "hello world"
+
     m.assert_called_once()
 
 
@@ -43,13 +44,12 @@ def test_xr_targeted(tmpdir):
 
     tgt = luigi.LocalTarget(path)
     air_t = targeted(tgt, reader=xarray_read, writer=xarray_write)(a)
-    air_t.compute()
 
-    assert tgt.exists()
+    with TargetedCallback():
+        air_t.compute()
+        assert tgt.exists()
 
-    # second compute
-    air_t = targeted(tgt, reader=xarray_read, writer=xarray_write)(a)
-    air_t.compute()
+        air_t.compute()
 
     m.assert_called_once()
 
