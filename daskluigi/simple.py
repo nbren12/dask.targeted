@@ -21,6 +21,10 @@ from .targeted import unfuse_match
 
 
 class TargetedCallback(Callback):
+    def __init__(self, *args, **kwargs):
+        super(TargetedCallback, self).__init__(*args, **kwargs)
+        self._targeted_keys = {}
+
     def _start(self, dsk):
 
         new_dsk = unfuse_match(dsk, lambda x: x == read_or_compute)
@@ -30,10 +34,17 @@ class TargetedCallback(Callback):
                 reader, writer, tgt, x = val[1:]
                 if tgt.exists():
                     new_dsk[key] = (reader, tgt)
+                    self._targeted_keys[key] = ("reading from", tgt)
                 else:
                     new_dsk[key] = (write_and_return, writer, tgt, x)
+                    self._targeted_keys[key] = ("writing to", tgt)
 
         dsk.update(new_dsk)
+
+    def _pretask(self, key, dsk, state):
+        if key in self._targeted_keys:
+            action, tgt = self._targeted_keys[key]
+            print("%s %s" % (action, tgt))
 
 
 def read_or_compute():
@@ -42,7 +53,7 @@ def read_or_compute():
     if (read_or_compute, reader, writer, tgt, x) is found in the dask graph it will be replaced by either
     (reader, tgt)
     if tgt.exists() == True
-    Otherwise it will be replaced by 
+    Otherwise it will be replaced by
     (write_and_return, writer, 'b')
     """
     pass
