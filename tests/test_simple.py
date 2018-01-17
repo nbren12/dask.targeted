@@ -1,6 +1,6 @@
 import luigi
 from dask import delayed
-from daskluigi.simple import string_targeted, targeted, xarray_read, xarray_write, targeted
+from daskluigi.simple import string_targeted, targeted, xarray_read, xarray_write, targeted, read_or_compute, TargetedCallback
 import mock
 
 
@@ -48,3 +48,36 @@ def test_xr_targeted(tmpdir):
     air_t.compute()
 
     m.assert_called_once()
+
+
+def test_targeted_callback(tmpdir):
+    from dask import get
+
+    tgt = mock.Mock(name="target")
+
+    fun = mock.Mock(name="function")
+    fun.return_value = "hello world"
+
+    reader = mock.Mock(name="reader")
+    writer = mock.Mock(name="writer")
+
+
+    # dask
+    dask = {
+        'a': (read_or_compute, reader, writer, tgt, 'b'),
+        'b': (fun, )
+    }
+
+
+    with TargetedCallback():
+        tgt.exists.return_value = False
+        get(dask, 'a')
+        fun.assert_called_once()
+
+
+        fun.reset_mock()
+        tgt.exists.return_value = True
+        get(dask, 'a')
+        fun.assert_not_called()
+
+

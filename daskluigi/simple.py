@@ -13,12 +13,37 @@ Example::
 """
 import luigi
 import xarray as xr
+from dask.callbacks import Callback
 from dask.delayed import delayed
 from toolz import curry
 
 
+class TargetedCallback(Callback):
+    def _start(self, dsk):
+        new_dsk = {}
+        for key, val in dsk.items():
+            if val[0] == read_or_compute:
+                reader, writer, tgt, x = val[1:]
+                if tgt.exists():
+                    new_dsk[key] = (reader, tgt)
+                else:
+                    new_dsk[key] = (write_and_return, writer, x)
+
+        dsk.update(new_dsk)
+
+
+def read_or_compute():
+    pass
+
+
+def write_and_return(writer, x):
+    writer(x)
+    return x
+
+
 def identity(x):
     return x
+
 
 @curry
 def targeted(target, obj, reader=identity, writer=identity):
