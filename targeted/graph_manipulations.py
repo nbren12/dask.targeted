@@ -102,3 +102,17 @@ def unfuse_match(dsk, match):
             stack.extend(new_keys)
 
     return dsk2
+
+
+def flatten(x):
+    """Flatten nested list structure with tuples at the bottom"""
+    stack = [x]
+    flat = []
+    while stack:
+        node = stack.pop()
+        if isinstance(node, tuple):
+            flat.append(node)
+        else:
+            for x in node:
+                stack.append(x)
+    return flat
